@@ -1,0 +1,32 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Temp files
+*~
+*.swp
+*Old.*
+
+# Build directory
+build*
+
+# Documentation directory
+doc/
+
+# Other directories
+data/
+log/
+old/
+
+# Merge files
+*.orig
