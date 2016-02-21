@@ -1,5 +1,6 @@
 import gp_controller as gpc
 import iCubInterface
+import iCubUtility as util
 import numpy as np
 import yarp
 import time
@@ -36,80 +37,50 @@ def writeIntoFile(fileName,string):
 def addDescriptionData(dataString,parameter,value):
     dataString = dataString + parameter + " " + value + "\n"
 
-def readImage(cameraPort,yarp_image):
-    cameraPort.read(yarp_image)
-
-def getFeedbackAngle(yarp_image,img_array):
-
-    img_bgr = img_array[:,:,[2,1,0]]
-    t = find_lines.load_t_matrix()
-    theta = find_lines.run_system(img_bgr, t)
-    return float(theta)
-
-def calculateFeedbackAngleDifference(previousFbAngle,currentFbAngle,fbAngleRange):
-
-    delta = currentFbAngle - previousFbAngle
-
-    if abs(delta) < fbAngleRange/2.0:
-        fbAngleDifference = delta
-    else:
-        fbAngleDifference = np.sign(-delta)*(fbAngleRange - abs(delta))
-
-    return fbAngleDifference
 
 def main():
 
     # module parameters
-    expID = 39
+    maxIterations = [    77,    84,   134,    66,    34,    81,    52,    31,     48,    66]
 
-    maxIterations = [    77,    14,   134,    66,    34,    81,    52,    31,     48,    66]
+    thumbDistalJointStartPos = 15
+    indexDistalJointStartPos = 15
+    middleDistalJointStartPos = 15
 
-    proximalJointStartPos = 40
-    distalJointStartPos = 0
-    joint1StartPos = 18
-    #                    0               1   2   3   4   5   6   7   8   9  10  11  12                    13                  14  15
-    startingPosEncs = [-44, joint1StartPos, -4, 39,-14,  2,  2, 18, 10,  0,163,  0,  0,proximalJointStartPos,distalJointStartPos,  0]   
-    #                        0   1   2   3   4   5
-    headStartingPosEncs = [-29,  0, 18,  0,  0,  0]
     actionEnabled = True
 
     rolloutsNumFirst = 30
     rolloutsNumStd = 10
 
-    finger = 1
-    proximalJoint = 13
-    distalJoint = 14
-    proximalJointEnc = 6
-    distalJointEnc_1 = 7
-    distalJointEnc_2 = 8
-
-    resetProbability = 0.02
+    thumbFingerId = 4
+	indexFingerId = 0
+	middleFingerId = 1
+	
+    thumbDistalJoint = 10
+    indexDistalJoint = 12
+    middleDistalJoint = 14
 
     actionDuration = 0.25
     pauseDuration = 0.0
 
-    maxFbAngle = math.pi
-    minFbAngle = -math.pi
-    maxFbAngleDifference = math.pi/3.0
-    fbAngleRange = maxFbAngle - minFbAngle
+#    normalizedMaxVoltageY = 1.0
+#    maxVoltageProxJointY = 250.0
+#    maxVoltageDistJointY = 800.0
+#    slopeAtMaxVoltageY = 1.0
 
-    normalizedMaxVoltageY = 1.0
-    maxVoltageProxJointY = 250.0
-    maxVoltageDistJointY = 800.0
-    slopeAtMaxVoltageY = 1.0
-
-    waitTimeForFingersRepositioning = 7.0
+    maxDistalPos = 90;
+	minDistalPos = 0; 
 
     dataDumperPortName = "/gpc/log:i"
     iCubIconfigFileName = "iCubInterface.txt"
     inputFilePath = "./"
-    initInputFileName = "controller_init_roll_fing.txt"
+    initInputFileName = "controller_init_stable_grasp.txt"
     standardInputFileName = "controller_input.txt"
     outputFilePath = "./"
     outputFileName = "controller_output.txt"
     dataPath = "./data/experiments/"
   
-    jointsToActuate = [proximalJoint,distalJoint]
+#    jointsToActuate = [thumbDistalJoint,indexDistalJoint,middleDistalJoint]
     
     fileNameIterID = "iterationID.txt"
     fileNameExperimentID = "experimentID.txt"
@@ -130,24 +101,24 @@ def main():
     print expID,isNewExperiment
     if os.path.exists(experimentFolderName):
         # get iteration ID
-        iterID = readValueFromFile(fileNameIterID)        
-        writeIntoFile(fileNameIterID,str(iterID+1))    
+        iterID = readValueFromFile(fileNameIterID)
+        writeIntoFile(fileNameIterID,str(iterID+1))
         inputFileFullName = inputFilePath + standardInputFileName
         rolloutsNum = rolloutsNumStd
     else:
         # create directory, create an experiment descrition file and reset iteration ID
         os.mkdir(experimentFolderName)
         descriptionData = ""
-        descriptionData = descriptionData + "proximalJointMaxVoltage " + str(maxVoltageProxJointY) + "\n"
-        descriptionData = descriptionData + "distalJointMaxVoltage " + str(maxVoltageDistJointY) + "\n"
-        descriptionData = descriptionData + "slopeAtMaxVoltage " + str(slopeAtMaxVoltageY) + "\n"
+        descriptionData = descriptionData + "thumbDistalJointStartPos " + str(thumbDistalJointStartPos) + "\n"
+        descriptionData = descriptionData + "indexDistalJointStartPos " + str(indexDistalJointStartPos) + "\n"
+        descriptionData = descriptionData + "middleDistalJointStartPos " + str(middleDistalJointStartPos) + "\n"
         descriptionData = descriptionData + "actionDuration " + str(actionDuration) + "\n"
         descriptionData = descriptionData + "pauseDuration " + str(pauseDuration) + "\n"
-        descriptionData = descriptionData + "finger " + str(finger) + "\n"
-        descriptionData = descriptionData + "jointActuated " + str(proximalJoint) + " " + str(distalJoint) + "\n"
-        descriptionData = descriptionData + "jointStartingPositions " + str(proximalJointStartPos) + " " + str(distalJointStartPos) + "\n"
-        descriptionData = descriptionData + "resetProbabilty " + str(resetProbability) + "\n"
-        descriptionData = descriptionData + "additionaNotes " + "" + "\n"
+        #descriptionData = descriptionData + "finger " + str(finger) + "\n"
+        #descriptionData = descriptionData + "jointActuated " + str(proximalJoint) + " " + str(distalJoint) + "\n"
+        #descriptionData = descriptionData + "jointStartingPositions " + str(proximalJointStartPos) + " " + str(distalJointStartPos) + "\n"
+        #descriptionData = descriptionData + "resetProbabilty " + str(resetProbability) + "\n"
+        #descriptionData = descriptionData + "additionaNotes " + "" + "\n"
         writeIntoFile(experimentFolderName + fileNameExpParams,descriptionData)
         iterID = 0
         writeIntoFile(fileNameIterID,"1")
@@ -160,9 +131,9 @@ def main():
     outputFileFullName = outputFilePath + outputFileName
 
     # calculate voltageX-voltageY mapping parameters (voltageY = k*(voltageX^(1/3)))
-    k = pow(3*slopeAtMaxVoltageY*(pow(normalizedMaxVoltageY,2)),(1/3.0))
+#    k = pow(3*slopeAtMaxVoltageY*(pow(normalizedMaxVoltageY,2)),(1/3.0))
 
-    maxVoltageX = pow(normalizedMaxVoltageY/k,3)
+#    maxVoltageX = pow(normalizedMaxVoltageY/k,3)
 
     # load gaussian process controller
     gp = gpc.GPController(inputFileFullName)
@@ -172,26 +143,11 @@ def main():
     iCubI = iCubInterface.ICubInterface(dataDumperPortName,iCubIconfigFileName)
     iCubI.loadInterfaces()
 
-    # cameras port
-    cameraPort = yarp.Port()
-    cameraPortName = "/gpc/leftEye"
-    cameraPort.open(cameraPortName)
-    yarp.Network.connect("/icub/cam/left",cameraPortName)
-
-    # image settings
-    width = 640
-    height = 480 
-    # Create numpy array to receive the image and the YARP image wrapped around it
-    img_array = np.zeros((height, width, 3), dtype=np.uint8)
-    yarp_image = yarp.ImageRgb()
-    yarp_image.resize(width, height)
-    yarp_image.setExternal(img_array, img_array.shape[1], img_array.shape[0])
-
     # set start position
     if actionEnabled:
-        iCubI.setArmPosition(startingPosEncs)
-        iCubI.setHeadPosition(headStartingPosEncs)
-        #iCubI.setRefVelocity(jointsToActuate,100)
+        iCubI.setJointPosition(thumbDistalJoint,thumbDistalJointStartPos)
+        #iCubI.setJointPosition(indexDistalJoint,indexDistalJointStartPos) #3FING
+        iCubI.setJointPosition(middleDistalJoint,middleDistalJointStartPos)
 
     # wait for the user
     raw_input("- press enter to start the controller -")
@@ -203,8 +159,8 @@ def main():
     fd.close()
     
     # initialize velocity mode
-    if actionEnabled:
-        iCubI.setOpenLoopMode(jointsToActuate)
+#    if actionEnabled:
+#        iCubI.setOpenLoopMode(jointsToActuate)
 
     rolloutsCounter = 0
     while rolloutsCounter < rolloutsNum:
@@ -217,11 +173,12 @@ def main():
 
         iterCounter = 0
         exit = False
-        voltage = [0,0]
-        oldVoltage = [0,0]
-        realVoltage = [0,0]
-        readImage(cameraPort,yarp_image)
-#        currentFbAngle = getFeedbackAngle(yarp_image,img_array)
+        newDistalJointsPos = [0,0]
+        #newDistalJointsPos = [0,0,0] #3FING
+#        voltage = [0,0]
+#        oldVoltage = [0,0]
+#        realVoltage = [0,0]
+
         # main loop
         while iterCounter < maxIterations[rolloutsCounter%10] and not exit:
 
@@ -229,51 +186,70 @@ def main():
             fullTactileData = iCubI.readTactileData()
             tactileData = []              
             for j in range(12):
-                tactileData.append(fullTactileData.get(12*finger+j).asDouble())
-            #print np.sum(tactileData[0:12])
-            # read encoders data from port
-            fullEncodersData = iCubI.readEncodersDataFromPort()
-            encodersData = []
-            encodersData.append(fullEncodersData.get(proximalJointEnc).asDouble())
-            encodersData.append(fullEncodersData.get(distalJointEnc_1).asDouble())
-            encodersData.append(fullEncodersData.get(distalJointEnc_2).asDouble())
+                tactileData.append(fullTactileData.get(12*thumbFingerId+j).asDouble())
+            #for j in range(12):
+            #    tactileData.append(fullTactileData.get(12*indexFingerId+j).asDouble()) #3FING
+            for j in range(12):
+                tactileData.append(fullTactileData.get(12*middleFingerId+j).asDouble())
+				
+			contactPositions = []
+			contactPositions.append(util.getContactPosition(tactileData[0:12]))
+			contactPositions.append(util.getContactPosition(tactileData[12:24]))
+			#contactPositions.append(util.getContactPosition(tactileData[24:36])) #3FING
+			
+            fullEncodersData = iCubI.readEncodersData()
+			distalJointsPos = []
+            distalJointsPos.append(fullEncodersData.get(thumbDistalJoint).asDouble())
+            #distalJointsPos.append(fullEncodersData.get(indexDistalJoint).asDouble()) #3FING
+            distalJointsPos.append(fullEncodersData.get(middleDistalJoint).asDouble())
 
-            state = [tactileData,encodersData,voltage]
-
-            # store image to be processed while action is applied
-            readImage(cameraPort,yarp_image)
+            state = [tactileData,contactPositions]
 
             # choose action
             action = gp.get_control(state)
 
-
-            # update and cut voltage
-            oldVoltage[0] = voltage[0]
-            oldVoltage[1] = voltage[1]
-            voltage[0] = action[0] #voltage[0] + action[0];
-            voltage[1] = action[1] #voltage[1] + action[1];
+            # update and cut distal joints position
+            newDistalJointsPos[0] = distalJointsPos[0] + action[0]
+            newDistalJointsPos[1] = distalJointsPos[1] + action[1]
+            #newDistalJointsPos[2] = distalJointsPos[2] + action[1] #3FING
+			if newDistalJointsPos[0] > maxDistalPos:
+			    newDistalJointsPos[0] = maxDistalPos
+			if newDistalJointsPos[0] < minDistalPos:
+			    newDistalJointsPos[0] = minDistalPos
+			if newDistalJointsPos[1] > maxDistalPos:
+			    newDistalJointsPos[1] = maxDistalPos
+			if newDistalJointsPos[1] < minDistalPos:
+			    newDistalJointsPos[1] = minDistalPos
+			#if newDistalJointsPos[2] > maxDistalPos: #3FING
+			#    newDistalJointsPos[2] = maxDistalPos
+			#if newDistalJointsPos[2] < minDistalPos:
+			#    newDistalJointsPos[2] = minDistalPos
+			
             #if abs(voltage[0]) > maxVoltageX:
             #    voltage[0] = maxVoltageX*np.sign(voltage[0])
             #if abs(voltage[1]) > maxVoltageX:
             #    voltage[1] = maxVoltageX*np.sign(voltage[1])
 
             # calculate real applied voltage
-            realVoltage[0] = maxVoltageProxJointY*k*pow(abs(voltage[0]),1/3.0)*np.sign(voltage[0])
-            realVoltage[1] = maxVoltageDistJointY*k*pow(abs(voltage[1]),1/3.0)*np.sign(voltage[1])
+#            realVoltage[0] = maxVoltageProxJointY*k*pow(abs(voltage[0]),1/3.0)*np.sign(voltage[0])
+#            realVoltage[1] = maxVoltageDistJointY*k*pow(abs(voltage[1]),1/3.0)*np.sign(voltage[1])
 
             # voltage safety check (it should never happen!)
-            if abs(realVoltage[0]) > maxVoltageProxJointY:
-                realVoltage[0] = maxVoltageProxJointY*np.sign(realVoltage[0])
-                print 'warning, voltage out of bounds!'
-            if abs(realVoltage[1]) > maxVoltageDistJointY:
-                realVoltage[1] = maxVoltageDistJointY*np.sign(realVoltage[1])
-                print 'warning, voltage out of bounds!'
+            #if abs(realVoltage[0]) > maxVoltageProxJointY:
+            #    realVoltage[0] = maxVoltageProxJointY*np.sign(realVoltage[0])
+            #    print 'warning, voltage out of bounds!'
+            #if abs(realVoltage[1]) > maxVoltageDistJointY:
+            #    realVoltage[1] = maxVoltageDistJointY*np.sign(realVoltage[1])
+            #    print 'warning, voltage out of bounds!'
 
 
             # apply action
             if actionEnabled:
-                iCubI.openLoopCommand(proximalJoint,realVoltage[0])        
-                iCubI.openLoopCommand(distalJoint,realVoltage[1])
+                iCubI.setJointPosition(thumbDistalJoint,newDistalJointsPos[0])
+                iCubI.setJointPosition(indexDistalJoint,newDistalJointsPos[1])
+                #iCubI.setJointPosition(middleDistalJoint,newDistalJointsPos[2]) #3FING
+#                iCubI.openLoopCommand(proximalJoint,realVoltage[0])        
+#                iCubI.openLoopCommand(distalJoint,realVoltage[1])
 
             # get feedback angle
 #            previousFbAngle = currentFbAngle
@@ -298,17 +274,10 @@ def main():
             time.sleep(pauseDuration)
  
             # log data
-            iCubI.logData(tactileData + encodersData + oldVoltage + voltage)#[action[0],action[1]])
+            iCubI.logData(tactileData + contactPositions + action)#[action[0],action[1]])
             logArray(tactileData,fd)
-            logArray(encodersData,fd)
-            logArray(oldVoltage,fd)
             logArray(action,fd)
-            fbAngleDifference = 0; # TODO TO REMOVE
-            logArray([fbAngleDifference],fd)
             fd.write("\n")
-
-            #print 'prev ',previousFbAngle*100/3.1415,'curr ',currentFbAngle*100/3.1415,'diff ',fbAngleDifference*100/3.1415
-
 
             iterCounter = iterCounter + 1
             exit = False #exitModule(resetProbability)
@@ -318,15 +287,10 @@ def main():
         if actionEnabled:
             print "finger ripositioning..."
             # finger repositioning
-            iCubI.setPositionMode(jointsToActuate)
-            iCubI.setJointPosition(1,joint1StartPos + 12)
-            time.sleep(1)
-            iCubI.setJointPosition(proximalJoint,proximalJointStartPos)
-            iCubI.setJointPosition(distalJoint,distalJointStartPos)
-            time.sleep(3)
-            iCubI.setJointPosition(1,joint1StartPos)
+            iCubI.setJointPosition(thumbDistalJoint,thumbDistalJointStartPos)
+            #iCubI.setJointPosition(indexDistalJoint,indexDistalJointStartPos) #3FING
+            iCubI.setJointPosition(middleDistalJoint,middleDistalJointStartPos)
             time.sleep(2)
-            iCubI.setOpenLoopMode(jointsToActuate)
 
 
 #            iCubI.setPositionMode(jointsToActuate)
@@ -347,9 +311,8 @@ def main():
 
     # copy input and output file
     # restore position mode and close iCubInterface
-    if actionEnabled:
-        iCubI.setPositionMode(jointsToActuate)
-    cameraPort.close()
+#    if actionEnabled:
+#        iCubI.setPositionMode(jointsToActuate)
     iCubI.closeInterface()
     
 		

@@ -265,4 +265,3 @@ class ICubInterface():
         self.tactDataPort.close()
         self.logPort.close()
         yarp.Network.fini()   
-			

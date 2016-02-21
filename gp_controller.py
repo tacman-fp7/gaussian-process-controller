@@ -65,14 +65,14 @@ class GPController():
     def get_features(self,state):
         f = np.zeros([6])
         tactileData = state[0]
-        encodersData = state[1]
-        voltage = state[2]
-        f[0] = np.sum(tactileData[0:12])
-        f[1] = encodersData[0] 
-        f[2] = encodersData[1] 
-        f[3] = encodersData[2]
-        f[4] = voltage[0]
-        f[5] = voltage[1]
+        contactPositions = state[1]
+
+        f[0] = contactPositions[0][0]
+        f[1] = contactPositions[0][1]
+        f[2] = contactPositions[1][0]
+        f[3] = contactPositions[1][1]
+        f[4] = contactPositions[2][0]
+        f[5] = contactPositions[2][1]
         return f
     
     def get_control(self,state):
