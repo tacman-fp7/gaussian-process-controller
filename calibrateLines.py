@@ -8,6 +8,7 @@ import random
 import os
 import find_lines
 
+
 def exitModule(resetProbability):
     randomNum = random.random()
     if randomNum < resetProbability:
