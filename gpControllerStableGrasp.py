@@ -5,7 +5,6 @@ import numpy as np
 import yarp
 import time
 import math
-import matplotlib.pylab
 import random
 import os
 import sys
@@ -41,7 +40,8 @@ def addDescriptionData(dataString,parameter,value):
 def main():
 
     # module parameters
-    maxIterations = [    77,    84,   134,    66,    34,    81,    52,    31,     48,    66]
+    maxIterations = [    50]
+    #maxIterations = [    77,    84,   134,    66,    34,    81,    52,    31,     48,    66]
 
     thumbDistalJointStartPos = 15
     indexDistalJointStartPos = 15
@@ -53,14 +53,14 @@ def main():
     rolloutsNumStd = 10
 
     thumbFingerId = 4
-	indexFingerId = 0
-	middleFingerId = 1
+    indexFingerId = 0
+    middleFingerId = 1
 	
     thumbDistalJoint = 10
     indexDistalJoint = 12
     middleDistalJoint = 14
 
-    actionDuration = 0.25
+    actionDuration = 2
     pauseDuration = 0.0
 
 #    normalizedMaxVoltageY = 1.0
@@ -68,8 +68,10 @@ def main():
 #    maxVoltageDistJointY = 800.0
 #    slopeAtMaxVoltageY = 1.0
 
+    maxThumbDistalPos = 60;
+    minThumbDistalPos = 0; 
     maxDistalPos = 90;
-	minDistalPos = 0; 
+    minDistalPos = 0; 
 
     dataDumperPortName = "/gpc/log:i"
     iCubIconfigFileName = "iCubInterface.txt"
@@ -145,9 +147,10 @@ def main():
 
     # set start position
     if actionEnabled:
-        iCubI.setJointPosition(thumbDistalJoint,thumbDistalJointStartPos)
+        iCubI.setJointPositionNoWait(thumbDistalJoint,thumbDistalJointStartPos)
         #iCubI.setJointPosition(indexDistalJoint,indexDistalJointStartPos) #3FING
-        iCubI.setJointPosition(middleDistalJoint,middleDistalJointStartPos)
+        iCubI.setJointPositionNoWait(middleDistalJoint,middleDistalJointStartPos)
+        time.sleep(3)
 
     # wait for the user
     raw_input("- press enter to start the controller -")
@@ -173,8 +176,16 @@ def main():
 
         iterCounter = 0
         exit = False
-        newDistalJointsPos = [0,0]
+        distalJointsPos = [0,0] #2FING
+        oldDistalJointsPos = [0,0] #2FING
+        newDistalJointsPos = [0,0] #2FING
+        #distalJointsPos = [0,0,0] #3FING
+        #oldDistalJointsPos = [0,0,0] #3FING
         #newDistalJointsPos = [0,0,0] #3FING
+
+        #TEMPORARY CODE
+        accuracyList = [[],[]]
+
 #        voltage = [0,0]
 #        oldVoltage = [0,0]
 #        realVoltage = [0,0]
@@ -192,16 +203,42 @@ def main():
             for j in range(12):
                 tactileData.append(fullTactileData.get(12*middleFingerId+j).asDouble())
 				
-			contactPositions = []
-			contactPositions.append(util.getContactPosition(tactileData[0:12]))
-			contactPositions.append(util.getContactPosition(tactileData[12:24]))
-			#contactPositions.append(util.getContactPosition(tactileData[24:36])) #3FING
+            contactPositions = []
+            contactPositions.append(util.getContactPosition(tactileData[0:12]))
+            contactPositions.append(util.getContactPosition(tactileData[12:24]))
+            #contactPositions.append(util.getContactPosition(tactileData[24:36])) #3FING
 			
             fullEncodersData = iCubI.readEncodersData()
-			distalJointsPos = []
-            distalJointsPos.append(fullEncodersData.get(thumbDistalJoint).asDouble())
-            #distalJointsPos.append(fullEncodersData.get(indexDistalJoint).asDouble()) #3FING
-            distalJointsPos.append(fullEncodersData.get(middleDistalJoint).asDouble())
+            distalJointsPos[0] = fullEncodersData.get(thumbDistalJoint)
+            distalJointsPos[1] = fullEncodersData.get(middleDistalJoint) #2FING
+            #distalJointsPos[1] = fullEncodersData.get(indexDistalJoint) #3FING
+            #distalJointsPos[2] = fullEncodersData.get(middleDistalJoint) #3FING
+
+            #TEMPORARY CODE
+            expectedMovement = [0,0]
+            actualMovement = [0,0]
+            movementAccuracyRate = [0,0]
+            expectedMovement[0] = newDistalJointsPos[0]-oldDistalJointsPos[0]
+            expectedMovement[1] = newDistalJointsPos[1]-oldDistalJointsPos[1]
+            actualMovement[0] = distalJointsPos[0]-oldDistalJointsPos[0]
+            actualMovement[1] = distalJointsPos[1]-oldDistalJointsPos[1]
+            if expectedMovement[0] != 0:
+               movementAccuracyRate[0] = 100.0*actualMovement[0]/expectedMovement[0]
+            if expectedMovement[1] != 0:
+               movementAccuracyRate[1] = 100.0*actualMovement[1]/expectedMovement[1]
+            print "{:7.3f}".format(oldDistalJointsPos[0]),'\t',"{:7.3f}".format(expectedMovement[0]),'\t',"{:7.3f}".format(actualMovement[0]),'\t',"{:6.2f}".format(movementAccuracyRate[0])
+            print "{:7.3f}".format(oldDistalJointsPos[1]),'\t',"{:7.3f}".format(expectedMovement[1]),'\t',"{:7.3f}".format(actualMovement[1]),'\t',"{:6.2f}".format(movementAccuracyRate[1])
+            print "---"
+            if abs(expectedMovement[0]) > 5:
+               accuracyList[0].append(movementAccuracyRate[0])
+            if abs(expectedMovement[1]) > 5:
+               accuracyList[1].append(movementAccuracyRate[1])
+
+
+
+            oldDistalJointsPos[0] = distalJointsPos[0]
+            oldDistalJointsPos[1] = distalJointsPos[1]
+
 
             state = [tactileData,contactPositions]
 
@@ -212,18 +249,18 @@ def main():
             newDistalJointsPos[0] = distalJointsPos[0] + action[0]
             newDistalJointsPos[1] = distalJointsPos[1] + action[1]
             #newDistalJointsPos[2] = distalJointsPos[2] + action[1] #3FING
-			if newDistalJointsPos[0] > maxDistalPos:
-			    newDistalJointsPos[0] = maxDistalPos
-			if newDistalJointsPos[0] < minDistalPos:
-			    newDistalJointsPos[0] = minDistalPos
-			if newDistalJointsPos[1] > maxDistalPos:
-			    newDistalJointsPos[1] = maxDistalPos
-			if newDistalJointsPos[1] < minDistalPos:
-			    newDistalJointsPos[1] = minDistalPos
-			#if newDistalJointsPos[2] > maxDistalPos: #3FING
-			#    newDistalJointsPos[2] = maxDistalPos
-			#if newDistalJointsPos[2] < minDistalPos:
-			#    newDistalJointsPos[2] = minDistalPos
+            if newDistalJointsPos[0] > maxThumbDistalPos:
+                newDistalJointsPos[0] = maxThumbDistalPos
+            if newDistalJointsPos[0] < minThumbDistalPos:
+                newDistalJointsPos[0] = minThumbDistalPos
+            if newDistalJointsPos[1] > maxDistalPos:
+                newDistalJointsPos[1] = maxDistalPos
+            if newDistalJointsPos[1] < minDistalPos:
+                newDistalJointsPos[1] = minDistalPos
+            #if newDistalJointsPos[2] > maxDistalPos: #3FING
+            #    newDistalJointsPos[2] = maxDistalPos #3FING
+            #if newDistalJointsPos[2] < minDistalPos: #3FING
+            #    newDistalJointsPos[2] = minDistalPos #3FING
 			
             #if abs(voltage[0]) > maxVoltageX:
             #    voltage[0] = maxVoltageX*np.sign(voltage[0])
@@ -245,9 +282,10 @@ def main():
 
             # apply action
             if actionEnabled:
-                iCubI.setJointPosition(thumbDistalJoint,newDistalJointsPos[0])
-                iCubI.setJointPosition(indexDistalJoint,newDistalJointsPos[1])
-                #iCubI.setJointPosition(middleDistalJoint,newDistalJointsPos[2]) #3FING
+                iCubI.setJointPositionNoWait(thumbDistalJoint,newDistalJointsPos[0])
+                iCubI.setJointPositionNoWait(middleDistalJoint,newDistalJointsPos[1]) #2FING
+                #iCubI.setJointPositionNoWait(indexDistalJoint,newDistalJointsPos[1]) #3FING
+                #iCubI.setJointPositionNoWait(middleDistalJoint,newDistalJointsPos[2]) #3FING
 #                iCubI.openLoopCommand(proximalJoint,realVoltage[0])        
 #                iCubI.openLoopCommand(distalJoint,realVoltage[1])
 
@@ -272,9 +310,9 @@ def main():
 
             # wait for stabilization
             time.sleep(pauseDuration)
- 
+
             # log data
-            iCubI.logData(tactileData + contactPositions + action)#[action[0],action[1]])
+            iCubI.logData(tactileData + contactPositions[0] + contactPositions[1] + [action[0],action[1]])#[action[0],action[1]])
             logArray(tactileData,fd)
             logArray(action,fd)
             fd.write("\n")
@@ -284,14 +322,19 @@ def main():
 
         fd.close()
 
+        #TEMPORARY CODE
+        print accuracyList[0]
+        print 'thumb','\t',np.mean(accuracyList[0]),'\t',np.std(accuracyList[0]),'\t',len(accuracyList[0])
+        print accuracyList[1]
+        print 'middle','\t',np.mean(accuracyList[1]),'\t',np.std(accuracyList[1]),'\t',len(accuracyList[1])
+
         if actionEnabled:
             print "finger ripositioning..."
             # finger repositioning
-            iCubI.setJointPosition(thumbDistalJoint,thumbDistalJointStartPos)
+            iCubI.setJointPositionNoWait(thumbDistalJoint,thumbDistalJointStartPos)
             #iCubI.setJointPosition(indexDistalJoint,indexDistalJointStartPos) #3FING
-            iCubI.setJointPosition(middleDistalJoint,middleDistalJointStartPos)
-            time.sleep(2)
-
+            iCubI.setJointPositionNoWait(middleDistalJoint,middleDistalJointStartPos)
+            time.sleep(3)
 
 #            iCubI.setPositionMode(jointsToActuate)
 #            iCubI.setJointPosition(proximalJoint,0.0)

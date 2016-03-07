@@ -2,8 +2,8 @@ nparams 7
 bandwidth 1 1 1 1 1 1
 scale 2.499000e-03
 lambda 1.000000e-06
-minvalues -10 -10
-maxvalues 10 10
-stdevInit 5 5
+minvalues -20 -20
+maxvalues 90 90
+stdevInit 30 30
 resetProb 2.000000e-02
 npoints 0

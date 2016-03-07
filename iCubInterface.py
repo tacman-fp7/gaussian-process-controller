@@ -241,6 +241,9 @@ class ICubInterface():
             done = self.iPos.checkMotionDone()
         print "target position reached"
         
+    def setJointPositionNoWait(self,joint,position):
+        self.iPos.positionMove(joint,position)
+        
     def setHeadJointPosition(self,joint,position):
         self.iPosHead.positionMove(joint,position)
         done = self.iPosHead.checkMotionDone()

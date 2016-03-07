@@ -52,8 +52,12 @@ def getContactPosition(tactileArray):
 		xTemp = xTemp + tactileArray[i]*taxPos[0]
 		yTemp = yTemp + tactileArray[i]*taxPos[1]
 		
-	x = xTemp/tactileSum
-	y = yTemp/tactileSum
+	if tactileSum > 0:	
+		x = xTemp/tactileSum
+		y = yTemp/tactileSum
+	else:
+		x = 1.5
+		y = 1.5
 	
 	return [x,y]		
 		
