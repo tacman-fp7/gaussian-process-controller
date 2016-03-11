@@ -76,7 +76,7 @@ def main():
     dataDumperPortName = "/gpc/log:i"
     iCubIconfigFileName = "iCubInterface.txt"
     inputFilePath = "./"
-    initInputFileName = "controller_init_stable_grasp.txt"
+    initInputFileName = "controller_init_stable_grasp_dist.txt"
     standardInputFileName = "controller_input.txt"
     outputFilePath = "./"
     outputFileName = "controller_output.txt"

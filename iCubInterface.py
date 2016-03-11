@@ -48,6 +48,11 @@ class ICubInterface():
         logPortName = "/gpc/log:o"
         self.logPort.open(logPortName)
         yarp.Network.connect(logPortName,self.dataDumperPortName)
+        # grasp module log port
+        self.graspModuleOutLogPort = yarp.BufferedPortBottle()
+        graspModuleOutLogPortName = "/gpc/graspModuleLog:o"
+        self.graspModuleOutLogPort.open(graspModuleOutLogPortName)
+        yarp.Network.connect(graspModuleOutLogPortName,"/plantIdentification/policyActions:i")
 
         # create driver and options
         self.driver = yarp.PolyDriver()
@@ -241,9 +246,6 @@ class ICubInterface():
             done = self.iPos.checkMotionDone()
         print "target position reached"
         
-    def setJointPositionNoWait(self,joint,position):
-        self.iPos.positionMove(joint,position)
-        
     def setHeadJointPosition(self,joint,position):
         self.iPosHead.positionMove(joint,position)
         done = self.iPosHead.checkMotionDone()
@@ -260,6 +262,13 @@ class ICubInterface():
         for i in range(len(valuesList)):
             bottle.addDouble(valuesList[i])
         self.logPort.write()
+
+    def sendDataToGraspModule(self,valuesList):
+        bottle = self.graspModuleOutLogPort.prepare()
+        bottle.clear()
+        for i in range(len(valuesList)):
+            bottle.addDouble(valuesList[i])
+        self.graspModuleOutLogPort.write()
 
     def closeInterface(self):
 

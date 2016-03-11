@@ -63,7 +63,8 @@ class GPController():
       self.isControllerLoaded = True
     
     def get_features(self,state):
-        f = np.zeros([6])
+        #f = np.zeros([4]) #2F
+        f = np.zeros([6]) #3F
         tactileData = state[0]
         contactPositions = state[1]
 
@@ -71,8 +72,8 @@ class GPController():
         f[1] = contactPositions[0][1]
         f[2] = contactPositions[1][0]
         f[3] = contactPositions[1][1]
-        f[4] = contactPositions[2][0]
-        f[5] = contactPositions[2][1]
+        f[4] = contactPositions[2][0] #3F
+        f[5] = contactPositions[2][1] #3F
         return f
     
     def get_control(self,state):
