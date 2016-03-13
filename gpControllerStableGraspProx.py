@@ -36,30 +36,31 @@ def writeIntoFile(fileName,string):
 def addDescriptionData(dataString,parameter,value):
     dataString = dataString + parameter + " " + value + "\n"
 
-def setPosition(thumbAdductionJointPos,handPos,indMidPressuresPercValue,iCubI):
-    sendDataToGraspModule(1,thumbAdductionJointPos,handPos,indMidPressuresPercValue)
+def setPosition(handPos,thumbAdductionJointPos,indMidPressuresPercValue,iCubI):
+    iCubI.sendDataToGraspModule([1,thumbAdductionJointPos,handPos,indMidPressuresPercValue])
 	
-def sendAction(thumbAdductionJointIncrement,handPosIncrement,indMidPressuresPercValueIncrement)
-    sendDataToGraspModule(2,thumbAdductionJointIncrement,handPosIncrement,indMidPressuresPercValueIncrement)
+def sendAction(handPosIncrement,thumbAdductionJointIncrement,indMidPressuresPercValueIncrement,iCubI):
+    iCubI.sendDataToGraspModule([2,thumbAdductionJointIncrement,handPosIncrement,indMidPressuresPercValueIncrement])
 
-def calculateHandPosition(fullEncodersData)
+def calculateHandPosition(fullEncodersData):
     #return (fullEncodersData[13] - fullEncodersData[9])/2 #2F
 	return ((fullEncodersData[13] + fullEncodersData[11])/2 - fullEncodersData[9])/2
 
-def boundValue(value,minValue,maxValue)
+def boundValue(value,minValue,maxValue):
     if value > maxValue:
-	    return maxValue
-	elif value < minValue:
-	    return minValue
-	else return value
+        return maxValue
+    elif value < minValue:
+        return minValue
+    else:
+        return value
 
 def main():
 
     # module parameters
-    maxIterations = [    50]
-    #maxIterations = [    77,    84,   134,    66,    34,    81,    52,    31,     48,    66]
+    #maxIterations = [    77,     84]
+    maxIterations = [    77,    84,   92,    66,    34,    81,    52,    31,     48,    66,    77,    84,   92,    66,    34,    81,    52,    31,     48,    66,    77,    84,   92,    66,    34,    81,    52,    31,     48,    66]
 
-    handStartPos = 0
+    handStartPos = 15
     #thumbAdductionJointStartPos = 60 #2A
     #indMidPressuresPercStartValue = 0 #3A
 
@@ -74,11 +75,11 @@ def main():
 	
     thumbAdductionJoint = 8
 
-    actionDuration = 0.25
+    actionDuration = 0.5
     pauseDuration = 0.0
 
-    maxHandPos = 10;
-    minHandPos = -10; 
+    maxHandPos = 20;
+    minHandPos = -20; 
     #maxThumbAdductionJointPos = 80; #2A
     #minThumbAdductionJointPos = 40; #2A
     #maxIndMidPressuresPercValue = 30 #3A
@@ -109,7 +110,7 @@ def main():
 
     # create output folder name
     experimentFolderName = dataPath + "exp_" + str(expID) + "/" # could be changed adding more information about the experiment
-    print expID,isNewExperiment
+    #print expID,isNewExperiment
     if os.path.exists(experimentFolderName):
         # get iteration ID
         iterID = readValueFromFile(fileNameIterID)
@@ -152,9 +153,9 @@ def main():
     iCubI.loadInterfaces()
     # set start position
     if actionEnabled:
-	    sendPosition(thumbAdductionJointStartPos,0,0) #1A
-	    #sendPosition(thumbAdductionJointStartPos,handStartPos,0) #2A
-	    #sendPosition(thumbAdductionJointStartPos,handStartPos,indMidPressuresPercStartValue) #3A
+	setPosition(handStartPos,0,0,iCubI) #1A
+	#setPosition(handStartPos,thumbAdductionJointStartPos,0,iCubI) #2A
+	#setPosition(handStartPos,thumbAdductionJointStartPos,indMidPressuresPercStartValue,iCubI) #3A
         time.sleep(4)
 
     # wait for the user
@@ -232,7 +233,7 @@ def main():
             #print "{:7.3f}".format(oldPositionArray[0]),'\t',"{:7.3f}".format(expectedMovement[0]),'\t',"{:7.3f}".format(actualMovement[0]),'\t',"{:6.2f}".format(movementAccuracyRate[0])
             #print "{:7.3f}".format(oldPositionArray[1]),'\t',"{:7.3f}".format(expectedMovement[1]),'\t',"{:7.3f}".format(actualMovement[1]),'\t',"{:6.2f}".format(movementAccuracyRate[1])
             #print "---"
-            if abs(expectedMovement[0]) > 2:
+            if abs(expectedMovement[0]) > 1:
                accuracyList[0].append(movementAccuracyRate[0])
             #if abs(expectedMovement[1]) > 2: #2-3A
             #   accuracyList[1].append(movementAccuracyRate[1]) #2-3A
@@ -244,20 +245,22 @@ def main():
 
             # choose action
             action = gp.get_control(state)
-	
+
             # update and cut distal joints position
-            newPositionArray[1] = boundValue(positionArray[0] + action[0],maxHandPos,maxHandPos)
-            #newPositionArray[0] = boundValue(positionArray[1] + action[1],minThumbAdductionJointPos,maxThumbAdductionJointPos) #2A
+            newPositionArray[0] = boundValue(positionArray[0] + action[0],minHandPos,maxHandPos)
+            #newPositionArray[1] = boundValue(positionArray[1] + action[1],minThumbAdductionJointPos,maxThumbAdductionJointPos) #2A
             #newPositionArray[2] = boundValue(positionArray[2] + action[2],minIndMidPressuresPercValue,maxIndMidPressuresPercValue) #3A
+
+            #print newPositionArray	
 			
             # apply action
             if actionEnabled:
-			    sendAction(newPositionArray[0],0,0) #1A
-			    #sendAction(newPositionArray[0],newPositionArray[1],0) #2A
-			    #sendAction(newPositionArray[0],newPositionArray[1],newPositionArray[2]) #3A
+                sendAction(newPositionArray[0],0,0,iCubI) #1A
+                #sendAction(newPositionArray[0],newPositionArray[1],0,iCubI) #2A
+                #sendAction(newPositionArray[0],newPositionArray[1],newPositionArray[2],iCubI) #3A
 
             beforeTS = time.time()
-			# here processing can take place 
+            # here processing can take place 
             afterTS = time.time()
             timeToSleep = max(actionDuration-(afterTS-beforeTS),0)
             time.sleep(timeToSleep)
@@ -268,11 +271,11 @@ def main():
             # log data
             #iCubI.logData(tactileData + contactPositions[0] + contactPositions[1] + [action[0],action[1]])#[action[0],action[1]])
             logArray(tactileData,fd)
-            logArray([fullEncodersData[9],fullEncodersData[11],[fullEncodersData[13]],fd) #3F
-            logArray(contactPositions,fd)
+            logArray([fullEncodersData[9],fullEncodersData[11],fullEncodersData[13]],fd) #3F
+            logArray(contactPositions[0] + contactPositions[1] + contactPositions[2],fd)
             #logArray([fullEncodersData[9],[fullEncodersData[13]],fd) #2F
             logArray(action,fd)
-			logArray([0],fd) #reward
+            logArray([0],fd) #reward
             fd.write("\n")
 
             iterCounter = iterCounter + 1
@@ -288,9 +291,9 @@ def main():
 
         if actionEnabled:
             print "hand ripositioning..."
-            sendPosition(thumbAdductionJointStartPos,0,0) #1A
-            #sendPosition(thumbAdductionJointStartPos,handStartPos,0) #2A
-            #sendPosition(thumbAdductionJointStartPos,handStartPos,indMidPressuresPercStartValue) #3A
+            setPosition(handStartPos,0,0,iCubI) #1A
+            #setPosition(handStartPos,thumbAdductionJointStartPos,0,iCubI) #2A
+            #setPosition(handStartPos,thumbAdductionJointStartPos,indMidPressuresPercStartValue,iCubI) #3A
             time.sleep(4)
 			
             print "...done"

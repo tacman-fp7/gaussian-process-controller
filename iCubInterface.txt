@@ -1,2 +1,2 @@
 robot icub
-whichHand right
+whichHand left
