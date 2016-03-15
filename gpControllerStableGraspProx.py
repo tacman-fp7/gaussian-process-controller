@@ -43,8 +43,8 @@ def sendAction(handPosIncrement,thumbAdductionJointIncrement,indMidPressuresPerc
     iCubI.sendDataToGraspModule([2,thumbAdductionJointIncrement,handPosIncrement,indMidPressuresPercValueIncrement])
 
 def calculateHandPosition(fullEncodersData):
-    #return (fullEncodersData[13] - fullEncodersData[9])/2 #2F
-	return ((fullEncodersData[13] + fullEncodersData[11])/2 - fullEncodersData[9])/2
+    return (fullEncodersData[13] - fullEncodersData[9])/2 #2F
+	#return ((fullEncodersData[13] + fullEncodersData[11])/2 - fullEncodersData[9])/2 #3F
 
 def boundValue(value,minValue,maxValue):
     if value > maxValue:
@@ -77,6 +77,7 @@ def main():
 
     actionDuration = 0.5
     pauseDuration = 0.0
+	tactileAverageTS = 5
 
     maxHandPos = 20;
     minHandPos = -20; 
@@ -191,25 +192,62 @@ def main():
         #TEMPORARY CODE
         accuracyList = [[]] #1A
         #accuracyList = [[],[]] #2-3A
-
+		
+        oldContactPositions = np.zeros(6)
+        contactPositionsDiffAvg = np.zeros(6)		
+		contactPositionsMatrix = np.array([])
+		
         # main loop
         while iterCounter < maxIterations[rolloutsCounter%10] and not exit:
 
-            # read tactile data
-            fullTactileData = iCubI.readTactileData()
-            tactileData = []              
-            for j in range(12):
-                tactileData.append(fullTactileData.get(12*thumbFingerId+j).asDouble())
-            for j in range(12): #3F
-                tactileData.append(fullTactileData.get(12*indexFingerId+j).asDouble()) #3F
-            for j in range(12):
-                tactileData.append(fullTactileData.get(12*middleFingerId+j).asDouble())
+		    tactileDataAverage = zeros(36)
+            for i in range(tactileAverageTS)
+			
+                # read tactile data
+                fullTactileData = iCubI.readTactileData()
+                tactileData = []              
+                for j in range(12):
+                    tactileData.append(fullTactileData.get(12*thumbFingerId+j).asDouble())
+                for j in range(12): #3F
+                    tactileData.append(fullTactileData.get(12*indexFingerId+j).asDouble()) #3F
+                for j in range(12):
+                    tactileData.append(fullTactileData.get(12*middleFingerId+j).asDouble())
+
+                if iterCount%10 == 0:
+				    print 'raw',tactileData[0],tactileData[1]
+                tactileDataAr = np.array(tactileData)
+				tactileDataAvarage = tactileDataAvarage + tactileDataAr
+                if iterCount%10 == 0:
+				    print 'avg',tactileDataAvarage[0],tactileDataAvarage[1]
+					
+ 				time.sleep(0.02)
+			
+			tactileDataAvarage = tactileDataAvarage / tactileAverageTS
+			tactileData = tactileDataAvarage.tolist()
+			
+            if iterCount%10 == 0
+                print 'end',tactileData[0],tactileData[1]			
+
+            print '---'
 				
             contactPositions = []
             contactPositions.append(util.getContactPosition(tactileData[0:12]))
             contactPositions.append(util.getContactPosition(tactileData[12:24]))
             contactPositions.append(util.getContactPosition(tactileData[24:36])) #3F
+
+            if len(contactPositionsMatrix) == 0:
+                contactPositionsMatrix = np.array([contactPositions])
+            else:
+                contactPositionsMatrix = np.append(contactPositionsMatrix,[contactPositionsMatrix],0)
 			
+            oldContactPositions = np.array(contactPositions)
+            if iterCount > 0:
+                contactPositionsAvg = contactPositionsAvg + abs(oldContactPositions - np.array(contactPositions))			
+                if iterCount%10 == 0
+                    print 'old',oldContactPositions			
+                    print 'now',np.array(contactPositions)
+                    print 'avg',contactPositionsAvg			
+				
             fullEncodersData = iCubI.readEncodersData()
             positionArray[0] = calculateHandPosition(fullEncodersData)
             #positionArray[1] = fullEncodersData.get(thumbAdductionJoint) #2A
@@ -262,18 +300,19 @@ def main():
             beforeTS = time.time()
             # here processing can take place 
             afterTS = time.time()
-            timeToSleep = max(actionDuration-(afterTS-beforeTS),0)
+			timeForAverage = tactileAverageTS*0.02
+            timeToSleep = max((actionDuration-(afterTS-beforeTS))-timeForAverage,0)
             time.sleep(timeToSleep)
-
+			
             # wait for stabilization
             time.sleep(pauseDuration)
 
             # log data
             #iCubI.logData(tactileData + contactPositions[0] + contactPositions[1] + [action[0],action[1]])#[action[0],action[1]])
             logArray(tactileData,fd)
+            #logArray([fullEncodersData[9],[fullEncodersData[13]],fd) #2F
             logArray([fullEncodersData[9],fullEncodersData[11],fullEncodersData[13]],fd) #3F
             logArray(contactPositions[0] + contactPositions[1] + contactPositions[2],fd)
-            #logArray([fullEncodersData[9],[fullEncodersData[13]],fd) #2F
             logArray(action,fd)
             logArray([0],fd) #reward
             fd.write("\n")
@@ -284,10 +323,21 @@ def main():
         fd.close()
 
         #TEMPORARY CODE
-        print accuracyList[0]
+        #print accuracyList[0]
         print 'thumb','\t',np.mean(accuracyList[0]),'\t',np.std(accuracyList[0]),'\t',len(accuracyList[0])
         #print accuracyList[1] #2-3A
         #print 'hand','\t',np.mean(accuracyList[1]),'\t',np.std(accuracyList[1]),'\t',len(accuracyList[1]) #2-3A
+        print 'avgContactDiff',contactPositionsAvg/(iterCount-1)
+		
+		contactPositionsMedian = []
+		for i in range(6):
+		    tempSum = []
+		    currContactPositionsArray = np.array([row[i] for row in contactPositionsMatrix])
+			for j in range(len(currContactPositionsArray) - 1):
+			    for k in range(j + 1,len(currContactPositionsArray)):
+				    tempSum.append(abs(currContactPositionArray[j] - currContactPositionArray[k]))
+			contactPositionsMedian.append(np.median(tempSum))
+        print 'med',contactPositionsMedian
 
         if actionEnabled:
             print "hand ripositioning..."
