@@ -68,12 +68,12 @@ class GPController():
         tactileData = state[0]
         contactPositions = state[1]
 
-        f[0] = contactPositions[0][0]
-        f[1] = contactPositions[0][1]
-        f[2] = contactPositions[1][0]
-        f[3] = contactPositions[1][1]
-        f[4] = contactPositions[2][0] #3F
-        f[5] = contactPositions[2][1] #3F
+        f[0] = contactPositions[0]
+        f[1] = contactPositions[1]
+        f[2] = contactPositions[2]
+        f[3] = contactPositions[3]
+        f[4] = contactPositions[4] #3F
+        f[5] = contactPositions[5] #3F
         return f
     
     def get_control(self,state):

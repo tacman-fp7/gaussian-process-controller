@@ -44,7 +44,7 @@ def sendAction(handPosIncrement,thumbAdductionJointIncrement,indMidPressuresPerc
 
 def calculateHandPosition(fullEncodersData):
     return (fullEncodersData[13] - fullEncodersData[9])/2 #2F
-	#return ((fullEncodersData[13] + fullEncodersData[11])/2 - fullEncodersData[9])/2 #3F
+    #return ((fullEncodersData[13] + fullEncodersData[11])/2 - fullEncodersData[9])/2 #3F
 
 def boundValue(value,minValue,maxValue):
     if value > maxValue:
@@ -57,16 +57,16 @@ def boundValue(value,minValue,maxValue):
 def main():
 
     # module parameters
-    #maxIterations = [    77,     84]
-    maxIterations = [    77,    84,   92,    66,    34,    81,    52,    31,     48,    66,    77,    84,   92,    66,    34,    81,    52,    31,     48,    66,    77,    84,   92,    66,    34,    81,    52,    31,     48,    66]
+    maxIterations = [    17,     14]
+    #maxIterations = [    77,    84,   92,    66,    34,    81,    52,    31,     48,    66]
 
     handStartPos = 15
     #thumbAdductionJointStartPos = 60 #2A
     #indMidPressuresPercStartValue = 0 #3A
 
-    actionEnabled = True
+    actionEnabled = False
 
-    rolloutsNumFirst = 30
+    rolloutsNumFirst = 2
     rolloutsNumStd = 10
 
     thumbFingerId = 4
@@ -77,7 +77,7 @@ def main():
 
     actionDuration = 0.5
     pauseDuration = 0.0
-	tactileAverageTS = 5
+    tactileAverageTS = 5
 
     maxHandPos = 20;
     minHandPos = -20; 
@@ -195,13 +195,13 @@ def main():
 		
         oldContactPositions = np.zeros(6)
         contactPositionsDiffAvg = np.zeros(6)		
-		contactPositionsMatrix = np.array([])
+        contactPositionsMatrix = np.array([])
 		
         # main loop
         while iterCounter < maxIterations[rolloutsCounter%10] and not exit:
 
-		    tactileDataAverage = zeros(36)
-            for i in range(tactileAverageTS)
+            tactileDataAverage = np.zeros(36)
+            for i in range(tactileAverageTS):
 			
                 # read tactile data
                 fullTactileData = iCubI.readTactileData()
@@ -213,45 +213,43 @@ def main():
                 for j in range(12):
                     tactileData.append(fullTactileData.get(12*middleFingerId+j).asDouble())
 
-                if iterCount%10 == 0:
-				    print 'raw',tactileData[0],tactileData[1]
+                #if iterCounter%10 == 0:
+                #    print 'raw',tactileData[0],tactileData[1]
                 tactileDataAr = np.array(tactileData)
-				tactileDataAvarage = tactileDataAvarage + tactileDataAr
-                if iterCount%10 == 0:
-				    print 'avg',tactileDataAvarage[0],tactileDataAvarage[1]
-					
- 				time.sleep(0.02)
+                tactileDataAverage = tactileDataAverage + tactileDataAr
+                #if iterCounter%10 == 0:
+                #    print 'avg',tactileDataAverage[0],tactileDataAverage[1]	
+                time.sleep(0.02)
 			
-			tactileDataAvarage = tactileDataAvarage / tactileAverageTS
-			tactileData = tactileDataAvarage.tolist()
+            tactileDataAverage = tactileDataAverage / tactileAverageTS
+            tactileData = tactileDataAverage.tolist()
 			
-            if iterCount%10 == 0
-                print 'end',tactileData[0],tactileData[1]			
-
-            print '---'
+            #if iterCounter%10 == 0:
+            #    print 'end',tactileData[0],tactileData[1]			
 				
             contactPositions = []
-            contactPositions.append(util.getContactPosition(tactileData[0:12]))
-            contactPositions.append(util.getContactPosition(tactileData[12:24]))
-            contactPositions.append(util.getContactPosition(tactileData[24:36])) #3F
+            contactPositions.extend(util.getContactPosition(tactileData[0:12]))
+            contactPositions.extend(util.getContactPosition(tactileData[12:24]))
+            contactPositions.extend(util.getContactPosition(tactileData[24:36])) #3F
+            print 'CP',contactPositions
 
             if len(contactPositionsMatrix) == 0:
                 contactPositionsMatrix = np.array([contactPositions])
             else:
-                contactPositionsMatrix = np.append(contactPositionsMatrix,[contactPositionsMatrix],0)
+                contactPositionsMatrix = np.append(contactPositionsMatrix,[contactPositions],0)
 			
-            oldContactPositions = np.array(contactPositions)
-            if iterCount > 0:
-                contactPositionsAvg = contactPositionsAvg + abs(oldContactPositions - np.array(contactPositions))			
-                if iterCount%10 == 0
+            if iterCounter > 0:
+                contactPositionsDiffAvg = contactPositionsDiffAvg + abs(oldContactPositions - np.array(contactPositions))			
+                if iterCounter%10 == 0:
                     print 'old',oldContactPositions			
                     print 'now',np.array(contactPositions)
-                    print 'avg',contactPositionsAvg			
+                    print 'avg',contactPositionsDiffAvg			
+            oldContactPositions = np.array(contactPositions)
 				
             fullEncodersData = iCubI.readEncodersData()
             positionArray[0] = calculateHandPosition(fullEncodersData)
             #positionArray[1] = fullEncodersData.get(thumbAdductionJoint) #2A
-			#positionArray[2] = newPositionArray[2] #3A
+            #positionArray[2] = newPositionArray[2] #3A
 
             #TEMPORARY CODE
             expectedMovement = [0] #1A
@@ -300,7 +298,7 @@ def main():
             beforeTS = time.time()
             # here processing can take place 
             afterTS = time.time()
-			timeForAverage = tactileAverageTS*0.02
+            timeForAverage = tactileAverageTS*0.02
             timeToSleep = max((actionDuration-(afterTS-beforeTS))-timeForAverage,0)
             time.sleep(timeToSleep)
 			
@@ -312,7 +310,7 @@ def main():
             logArray(tactileData,fd)
             #logArray([fullEncodersData[9],[fullEncodersData[13]],fd) #2F
             logArray([fullEncodersData[9],fullEncodersData[11],fullEncodersData[13]],fd) #3F
-            logArray(contactPositions[0] + contactPositions[1] + contactPositions[2],fd)
+            logArray(contactPositions,fd)
             logArray(action,fd)
             logArray([0],fd) #reward
             fd.write("\n")
@@ -324,20 +322,22 @@ def main():
 
         #TEMPORARY CODE
         #print accuracyList[0]
+        print '---'
         print 'thumb','\t',np.mean(accuracyList[0]),'\t',np.std(accuracyList[0]),'\t',len(accuracyList[0])
         #print accuracyList[1] #2-3A
         #print 'hand','\t',np.mean(accuracyList[1]),'\t',np.std(accuracyList[1]),'\t',len(accuracyList[1]) #2-3A
-        print 'avgContactDiff',contactPositionsAvg/(iterCount-1)
+        print 'avgContactDiff',contactPositionsDiffAvg/(iterCounter-1)
 		
-		contactPositionsMedian = []
-		for i in range(6):
-		    tempSum = []
-		    currContactPositionsArray = np.array([row[i] for row in contactPositionsMatrix])
-			for j in range(len(currContactPositionsArray) - 1):
-			    for k in range(j + 1,len(currContactPositionsArray)):
-				    tempSum.append(abs(currContactPositionArray[j] - currContactPositionArray[k]))
-			contactPositionsMedian.append(np.median(tempSum))
+	contactPositionsMedian = []
+	for i in range(6):
+	    tempSum = []
+	    currContactPositionsArray = np.array([row[i] for row in contactPositionsMatrix])
+            for j in range(len(currContactPositionsArray) - 1):
+               for k in range(j + 1,len(currContactPositionsArray)):
+                  tempSum.append(abs(currContactPositionsArray[j] - currContactPositionsArray[k]))
+            contactPositionsMedian.append(np.median(tempSum))
         print 'med',contactPositionsMedian
+        print '---'
 
         if actionEnabled:
             print "hand ripositioning..."
