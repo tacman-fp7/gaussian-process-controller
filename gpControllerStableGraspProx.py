@@ -57,16 +57,16 @@ def boundValue(value,minValue,maxValue):
 def main():
 
     # module parameters
-    maxIterations = [    17,     14]
-    #maxIterations = [    77,    84,   92,    66,    34,    81,    52,    31,     48,    66]
+    #maxIterations = [    17,     14]
+    maxIterations = [    77,    84,   92,    66,    34,    81,    52,    31,     48,    66]
 
     handStartPos = 15
     #thumbAdductionJointStartPos = 60 #2A
     #indMidPressuresPercStartValue = 0 #3A
 
-    actionEnabled = False
+    actionEnabled = True
 
-    rolloutsNumFirst = 2
+    rolloutsNumFirst = 30
     rolloutsNumStd = 10
 
     thumbFingerId = 4
@@ -75,7 +75,7 @@ def main():
 	
     thumbAdductionJoint = 8
 
-    actionDuration = 0.5
+    actionDuration = 0.75
     pauseDuration = 0.0
     tactileAverageTS = 5
 
@@ -90,9 +90,9 @@ def main():
     iCubIconfigFileName = "iCubInterface.txt"
     inputFilePath = "./"
     initInputFileName = "controller_init_stable_grasp_prox.txt"
-    standardInputFileName = "controller_input.txt"
+    standardInputFileName = "controller.txt"
     outputFilePath = "./"
-    outputFileName = "controller_output.txt"
+    outputFileName = "rolloutdata.txt"
     dataPath = "./data/experiments/"
 
     fileNameIterID = "iterationID.txt"
@@ -240,10 +240,10 @@ def main():
 			
             if iterCounter > 0:
                 contactPositionsDiffAvg = contactPositionsDiffAvg + abs(oldContactPositions - np.array(contactPositions))			
-                if iterCounter%10 == 0:
-                    print 'old',oldContactPositions			
-                    print 'now',np.array(contactPositions)
-                    print 'avg',contactPositionsDiffAvg			
+                #if iterCounter%10 == 0:
+                    #print 'old',oldContactPositions			
+                    #print 'now',np.array(contactPositions)
+                    #print 'avg',contactPositionsDiffAvg			
             oldContactPositions = np.array(contactPositions)
 				
             fullEncodersData = iCubI.readEncodersData()
