@@ -30,3 +30,10 @@ old/
 
 # Merge files
 *.orig
+
+experimentID.txt
+iterationID
+controller.txt
+rolloutdata.txt
+*.pyc
+
