@@ -32,7 +32,7 @@ old/
 *.orig
 
 experimentID.txt
-iterationID
+iterationID.txt
 controller.txt
 rolloutdata.txt
 *.pyc
