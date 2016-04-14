@@ -99,10 +99,7 @@ def main():
     fileNameExperimentID = "experimentID.txt"
     fileNameExpParams = "parameters.txt"
 
-    isNewExperiment = False
-    if len(sys.argv) > 1:
-        if sys.argv[1] == 'new':
-            isNewExperiment = True 
+    isNewExperiment = True 
     
     expID = readValueFromFile(fileNameExperimentID)        
     if isNewExperiment:

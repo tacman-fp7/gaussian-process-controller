@@ -60,7 +60,7 @@ def main():
     maxIterations = [    1000]
     #maxIterations = [    77,    84,   92,    66,    34,    81,    52,    31,     48,    66]
 
-    handStartPos = 0
+    handStartPos = -20
     #thumbAdductionJointStartPos = 60 #2A
     #indMidPressuresPercStartValue = 0 #3A
 
@@ -280,7 +280,7 @@ def main():
             state = [tactileData,contactPositions]
 
             # choose action
-            action = gp.get_control(state)
+            action = gp.get_control_nonoise(state)
 
             # update and cut distal joints position
             newPositionArray[0] = boundValue(positionArray[0] + action[0],minHandPos,maxHandPos)
